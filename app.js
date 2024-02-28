@@ -1,44 +1,57 @@
 const http = require("http")
 const fs = require("fs")
 const path = require("path")
+const express = require("express")
+const bodyparser = require("body-parser")
+const app = new express();
+
+app.use(express.static(__dirname + "/public"))
+
+app.use(bodyparser.urlencoded({
+    extended: false
+}))
+
+app.use(bodyparser.json());
 
 
-server = http.createServer((req,res) => {
-    const url = req.url
+app.get("/test", (req,res) => {
+    res.end("it works")
+})
+
+app.get("/register", (req,res) => {
+    res.sendFile(path.resolve(__dirname, "test.html"));
     
-    if(url == "/about"){
-        fs.readFile(path.resolve(__dirname, "test.txt"), (err, data) => {
-            if(err){
-                console.log(err)
-                return
-            } else{
-                res.write(data)
-            }
-        })
+})
 
-        res.write("this is the about page")
-    }
-    else if(url == "/register"){
-        res.write(registerPage)
-    }
-    else if(url == "/data"){
-        res.statusCode = 301
-        res.write(registerData)
-    }
+app.post('/', function(req,res){
+    var first_name = req.body.first_name;
+    var preposition = req.body.preposition
+    var last_name = req.body.last_name
+    var email = req.body.email
+    var password = req.body.password
+    var htmlData = [
+        first_name,
+        last_name,
+        preposition,
+        email,
+        password
+    ]
 
-    res.end("end of content")
+    fs.createWriteStream(path.resolve(__dirname, "api.js"), htmlData)
+    res.send(htmlData);
+    console.log(htmlData);
+});
+
+app.get("/api/data", (req,res) => {
+    res.json(res.sendFile(path.resolve(__dirname, "api.json")))
 })
 
 
-server.listen(5000, () => {
-    console.log("server running on port:5000")
+
+app.listen(5000, () => {
+    console.log("app listening on port: 5000")
 })
 
-server.on("error", (error) => {
-    console.error(`An error occurred: ${error}`)
-})
 
-server.on("close", () => {
-    console.log("server closed")
-})
+
 
