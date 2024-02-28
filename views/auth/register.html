@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/output.css">
+</head>
+<body>
+    <nav class="bg-blue-500 p-6 pl-16 flex justify-between">
+        <ul class="flex gap-6 text-white text-2xl  justify-items-start cursor-pointer">
+            <li class="ml-20 mt-1 rounded-sm  bg-purple-rgb  hover:bg-purple-rgb "><a href="/" >Home</a></li>
+            <li class="mt-1 rounded-sm bg-purple-rgb  hover:bg-purple-rgb  "><a >Reserveren</a></li>
+            <li class="mt-1 rounded-sm  bg-purple-rgb  hover:bg-purple-rgb "><a >Contact</a></li>
+
+            <input type="text" class="ml-36 w-96 text-black  rounded-sm text-sm pl-2 p-2 " placeholder="Zoek naar materialen....." >
+            <div class="right-28 w-48 justify-between absolute flex text-md">
+           
+            <li class="mt-1 text-xl"><a href="/login">Inloggen</a></li>
+            <li class="mt-1 text-xl"><a href="/register">Registreren</a></li>
+           
+
+           <li><button><i class="bi bi-cart text-4xl -mr-24"></i></li></button>
+            <div>
+                
+                <button id="dropdown_main_button" data-dropdown-toggle="dropdown_main"
+                    class="float-right  text-white font-medium rounded-lg text-md px-5 mt-1 ml-24  text-center inline-flex items-center"
+                    type="button"><li id="username" class="text-xl"></li> <svg class="w-2.5 h-2.5 ml-2" id="username" aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="m1 1 4 4 4-4" />
+                    </svg></button>
+                <div id="dropdown_main" class="z-10 mt-10 ml-5 hidden   bg-white divide-y divide-gray-100 rounded-lg shadow w-44">
+                    <ul class="py-2 text-sm text-gray-700" aria-labelledby="dropdown_main_button">
+                        <li>
+                            
+                            <a  class="block px-4 py-2 hover:bg-gray-100">Beheer paneel</a>
+                            
+                        </li>
+                        <li>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Profiel</a>
+                        </li>
+                        <li>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Mijn historie</a>
+                        </li>
+                        
+                        <a class="block px-4 py-2 hover:bg-gray-100"><li>Winkelwagen</li></a>
+                        
+                        <li>
+                            <a href="" class="block px-4 py-2 hover:bg-gray-100"
+                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Uitloggen</a>
+                            <form id="logout-form" style="display: none;"  method="POST">
+                                @csrf
+                            </form>
+
+                           
+                        </li>
+                    </ul>
+                </div>
+            </div>
+           
+            
+            </div>
+            
+        </ul>
+      
+    </nav>
+
+<div class=" w-2/3 h-3/4  bg-gray-100 text-black ml-64 mt-20 p-6 rounded-lg shadow-md">
+    <div>
+        <h2 class="text-center text-3xl font-extrabold">
+            Registreren
+        </h2>
+    </div>
+    <form  method="post" action="/submit" class="space-y-5 ml-48 grid grid-cols-2   justify-center ">
+    
+           
+        <div class="col-span-1  mt-auto flex flex-col">
+                <label for="username" class="  ">Voornaam</label>
+                <input id="username" name="first_name" type="text" class=" rounded-md  w-1/2  px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" >
+               
+            </div>
+            <div class="col-span-1 mt-auto flex flex-col">
+                <label for="email-address" >Tussenvoegsel (optioneel)</label>
+                <input id="text" name="preposition"  class=" rounded-md w-1/2  px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                
+            </div>
+            <div class="col-span-1    mt-auto flex flex-col ">
+                <label for="email-address" >Achternaam</label>
+                <input id="text" name="last_name" type="text" class=" rounded-md w-1/2  px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" >
+                @error("last_name")
+                <p class="text-red-500 text-xs mt-1">{{$message}}</p>
+                @enderror
+            </div>
+            <div class="col-span-1    mt-auto flex flex-col">
+                <label for="password" >Email</label>
+                <input id="password" name="email"  class=" rounded-md w-1/2  px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" >
+                
+            
+            </div>
+            <div class="col-span-1   mt-auto flex flex-col">
+                <label for="password" >Wachtwoord</label>
+                <input id="password" name="password" type="password"  class=" rounded-md w-1/2  px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                
+            </div>
+            <div class="col-span-1    mt-auto flex flex-col">
+                <label for="password" >Wachtwoord herhalen</label>
+                <input id="password" name="password_confirmation" type="password"  class="rounded-md w-1/2 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" >
+                
+            </div>
+       
+
+        <div class="">
+            <button type="submit"   class="group items-center  w-36 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Registreren
+            </button>
+        </div>
+    </form>
+
+</div>
+
+
+
+</body>
+</html>
