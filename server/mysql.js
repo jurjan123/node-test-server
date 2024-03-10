@@ -17,20 +17,39 @@ const pool = mysql.createPool({
     database: "leasesystem"
 })
 
-/*pool.getConnection(function(err, connection){
+pool.getConnection(function(err, connection){
     if(err){
         throw err
     } 
 
-    connection.query("SELECT * from products", (err, results) => {
-        //console.log(results)
-        console.log(pool.host)
-        connection.destroy()
-        console.log("test")
-    })
+    connection.query("SELECT * from users", (err, results) => {
+       if(err){
+        console.log(err.code)
+       }
+
+       const userData = JSON.stringify(results)
+
+       fs.writeFile(path.resolve(__dirname, "server", "api.json"), userData, (err) => {
+        if(err){
+            console.log(err.code)
+        }
+
+        console.log("appended to file")
+        connection.release()
+    });
+   
+    }) 
 })
 
-pool.end(() => {
+/*const userDelete = connection.query("DELETE from users", ((err, results) => {
+    if(err){
+        console.log(err.code)
+    }
+
+    connection.destroy()
+}))
+
+/*pool.end(() => {
     console.log("pool is closed")
 } )*/
 

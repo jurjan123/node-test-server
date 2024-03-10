@@ -4,7 +4,7 @@ const path = require("path")
 const express = require("express")
 const session = require("express-session")
 const flash = require("express-flash")
-const sha1 = require("sha1")
+const bcrypt = require("bcrypt")
 const bodyparser = require("body-parser")
 const {body, validationResult} = require("express-validator")
 const app = new express();
@@ -64,14 +64,44 @@ app.get("/login", (req,res) => {
     res.sendFile(loginPage)
 })
 
-app.use("*", (req,res, next) => {
-    if(req.method != "GET"){
-        next()
-    } else{
-        return res.status(404).send("<h1>Resource not found</h1>")
+
+
+app.route('/login')
+  .get((req, res) => {
+    res.sendFile(loginPage)
+  })
+  app.post('/login', [
+    body('email').isEmail().withMessage('Enter a valid email address'),
+    body('password').notEmpty().withMessage('Password is required')
+  ], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-   
-})
+  
+    const { email, password } = req.body;
+  
+    pool.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
+      if (err) {
+        return res.status(500).send('Database error');
+      }
+  
+      if (results.length === 0) {
+        return res.status(401).send('No user found with that email address');
+      }
+  
+      const user = results[0];
+      const passwordMatch = await bcrypt.compare(password, user.password);
+  
+      if (!passwordMatch) {
+        return res.status(401).send('Incorrect password');
+      }
+  
+      req.session.userId = user.id;
+      res.redirect('/profile'); // Redirect to a profile or another internal page
+    });
+  });
+
 
 app.post('/submit', [
     body('first_name').isLength({ min: 5 }).withMessage('first name must be at least 5 characters long'),
@@ -115,15 +145,17 @@ app.post('/submit', [
       return res.json({ errors: errors.array() });
     } else{
         const jsonData = JSON.stringify(req.body);
-
+        const saltRounds = 10;
+        const salt = bcrypt.genSalt(saltRounds);
+        req.body.password =  bcrypt.hash(req.body.password, salt);
         const userData = {
             first_name: req.body.first_name,
             last_name: req.body.last_name,
             preposition: req.body.preposition,
             email: req.body.email,
-            password: sha1(req.body.password)
-          };
-          
+            password: req.body.password
+        }
+
         pool.getConnection(function(err, connection){
             connection.query('INSERT INTO users SET ?', userData, (err, results, fields) => {
                 if(err){
@@ -150,10 +182,13 @@ app.get("/api/data", (req,res) => {
     res.json(res.sendFile(path.resolve(__dirname, "server", "api.json")))
 })
 
+app.use("*", (req,res, next) => {
+   
+    return res.status(404).send("<h1>Resource not found</h1>")
+})
+
 app.listen(5000, () => {
     console.log("app listening on port: 5000")
 })
-
-
 
 

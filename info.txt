@@ -27,3 +27,199 @@ recipe-app/
 ├── .gitignore               # Specifies intentionally untracked files to ignore
 ├── README.md                # Project overview and documentation
 └── package.json             # Root package.json for scripts to run both client and server
+
+
+
+const http = require("http")
+const fs = require("fs")
+const path = require("path")
+const express = require("express")
+const session = require("express-session")
+const flash = require("express-flash")
+const bcrypt = require("bcrypt")
+const bodyparser = require("body-parser")
+const {body, validationResult} = require("express-validator")
+const app = new express();
+const {pool, connection} = require("./server/mysql")
+const { connect } = require("http2")
+
+
+const homePage = path.resolve(__dirname, "views", "index.html")
+const loginPage = path.resolve(__dirname, "views", "auth", "login.html")
+const registerPage = path.resolve(__dirname, "views", "auth", "register.html")
+const categoryPage = path.resolve(__dirname, "views", "categories", "index.html")
+app.use(express.static(__dirname + "/public"))
+
+app.use(session({
+    secret: "harrypotter",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {secure: false}
+}))
+
+app.use(flash())
+app.use(bodyparser.urlencoded({
+    extended: false
+}))
+
+app.use(bodyparser.json());
+
+app.get("/", (req,res) => {
+   res.sendFile(homePage)
+   res.send(req.session.user)
+})
+
+
+app.get("/categories", (req,res) => {
+
+    pool.getConnection(function(err, connection){
+        if(err){
+            throw err
+        } 
+    
+        connection.query("SELECT * from products", (err, results) => {
+            console.log(results)
+            res.sendFile(categoryPage)
+            res.send(results)
+            
+            connection.release()
+        })
+    })
+    
+    
+})
+   
+
+
+
+app.route('/login')
+  .get((req, res) => {
+    res.sendFile(loginPage)
+  })
+  app.post('/login', [
+    body('email').isEmail().withMessage('Enter a valid email address'),
+    body('password').notEmpty().withMessage('Password is required')
+  ], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+  
+    const { email, password } = req.body;
+  
+    pool.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
+      if (err) {
+        return res.status(500).send('Database error');
+      }
+  
+      if (results.length === 0) {
+        return res.status(401).send('No user found with that email address');
+      }
+  
+      const user = results[0];
+      const passwordMatch = await bcrypt.compare(password, user.password);
+  
+      if (!passwordMatch) {
+        return res.status(401).send('Incorrect password');
+      }
+  
+      req.session.userId = user.id;
+      res.redirect('/profile'); // Redirect to a profile or another internal page
+    });
+  });
+
+  app.route("/register")
+.get((req,res) => {
+    res.sendFile(registerPage);
+})
+.post([
+    body('first_name').isLength({ min: 5 }).withMessage('first name must be at least 5 characters long'),
+    body("last_name").isLength({min: 5}).withMessage("last name must be at least 5 characters long"),
+    body("preposition").isLength({min:2}).withMessage("preposition must be at least 2 characters long"),
+    body('email').isEmail().normalizeEmail().withMessage('Email must be valid').custom(async email => {
+        const user = await new Promise((resolve,reject) => {
+            connection.query("SELECT email from users where email = ?", [email], (err,results,fields) => {
+                if(err){
+                    reject(new Error("something went wrong"))
+                } else{
+                    resolve(results.length > 0 ? results[0] : null);
+                }
+            })
+        })
+        if (user) {
+            throw new Error('Email already in use');
+        }
+    }),
+    body('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters long'),
+    body("password_confirmation").custom((value, { req }) => {
+        if (value !== req.body.password) {
+          throw new Error('Password confirmation does not match password');
+        }
+        
+        return true;
+      }),
+
+    
+   
+  ], (req, res) => {
+   
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        req.flash('errors', errors);
+        
+        //return res.redirect("/register")
+    
+      return res.json({ errors: errors.array() });
+    } else{
+        const jsonData = JSON.stringify(req.body);
+
+        const userData = {
+            first_name: req.body.first_name,
+            last_name: req.body.last_name,
+            preposition: req.body.preposition,
+            email: req.body.email,
+            password: bcrypt.hash(req.body.password)
+        };
+
+        req.session.user = userData
+          
+        pool.getConnection(function(err, connection){
+            connection.query('INSERT INTO users SET ?', userData, (err, results, fields) => {
+                if(err){
+                    console.log(err)
+                }
+
+                connection.release()
+            })
+        })
+      // Write JSON data to api.json file
+        /*fs.writeFile(path.resolve(__dirname, "server", "api.json"), jsonData, (err) => {
+            if(err){
+                throw err
+            }
+
+            console.log("appended to file")
+        });*/
+       
+       
+    }
+});
+
+
+
+app.get("/api/data", (req,res) => {
+    res.json(path.resolve(__dirname, "server", "api.json"))
+})
+
+app.use("*", (req,res, next) => {
+    return res.status(404).send("<h1>Resource not found</h1>")
+})
+
+
+
+
+app.listen(5000, () => {
+    console.log("app listening on port: 5000")
+})
+
