@@ -8,7 +8,7 @@ const bcrypt = require("bcrypt")
 const bodyparser = require("body-parser")
 const {body, validationResult} = require("express-validator")
 const app = new express();
-const {pool, connection} = require("./server/mysql")
+const {pool, connection, userData} = require("./server/mysql")
 
 const homePage = path.resolve(__dirname, "views", "index.html")
 const loginPage = path.resolve(__dirname, "views", "auth", "login.html")
@@ -179,6 +179,23 @@ app.post('/submit', [
                     console.log(err)
                 }
 
+                
+      req.session.regenerate(function(err){
+        if(err){
+          console.log(err)
+        }
+
+        var hour = 3600000
+        req.session.cookie.expires = new Date(Date.now() + hour)
+        req.session.cookie.maxAge = hour
+        req.session.user = userData
+      })
+
+      req.session.save(function(err){
+        if(err){
+          console.log(err)
+        }
+
                 connection.release()
             })
         })
@@ -189,15 +206,20 @@ app.post('/submit', [
             }
 
             console.log("appended to file")
-        });
-       
-        res.redirect("/")
+      });
+
+      })
+
+        
     }
   });
 
-app.get("/api/data", (req,res) => {
-    return res.json(res.sendFile(path.resolve(__dirname, "server", "api.json")))
+app.get("/api/users", async (req,res) => {
 })
+
+app.get("/userdata", ((req,res) => {
+  
+}))
 
 app.get("/logout",  ((req,res) => {
   req.session.destroy((err) => {
