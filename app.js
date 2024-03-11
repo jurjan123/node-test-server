@@ -32,8 +32,12 @@ app.use(bodyparser.json());
 
 app.get("/", (req,res) => {
    res.sendFile(homePage)
+   //res.send(req.session.user)
 })
 
+app.get("/session", ((req,res) => {
+  res.send(req.session)
+}))
 
 app.get("/categories", (req,res) => {
 
@@ -54,8 +58,6 @@ app.get("/categories", (req,res) => {
     
 })
    
-
-
 app.get("/register", (req,res) => {
     res.sendFile(registerPage);
 })
@@ -63,8 +65,6 @@ app.get("/register", (req,res) => {
 app.get("/login", (req,res) => {
     res.sendFile(loginPage)
 })
-
-
 
 app.route('/login')
   .get((req, res) => {
@@ -96,11 +96,31 @@ app.route('/login')
       if (!passwordMatch) {
         return res.status(401).send('Incorrect password');
       }
-  
-      req.session.userId = user.id;
-      res.redirect('/profile'); // Redirect to a profile or another internal page
+
+      req.session.regenerate(function(err){
+        if(err){
+          console.log(err)
+        }
+
+        var hour = 3600000
+        req.session.cookie.expires = new Date(Date.now() + hour)
+        req.session.cookie.maxAge = hour
+        req.session.user = user
+      })
+
+      req.session.save(function(err){
+        if(err){
+          console.log(err)
+        }
+        res.redirect('/');
+      })
+      // Redirect to a profile or another internal page
     });
+
+    
   });
+
+
 
 
 app.post('/submit', [
@@ -126,12 +146,9 @@ app.post('/submit', [
         if (value !== req.body.password) {
           throw new Error('Password confirmation does not match password');
         }
-        // Indicates the success of this synchronous custom validator
+       
         return true;
       }),
-
-    
-    //body("password_confirmation").matches("password").withMessage("repeated password must be the same as password")
   ], (req, res) => {
    
     const errors = validationResult(req);
@@ -146,14 +163,14 @@ app.post('/submit', [
     } else{
         const jsonData = JSON.stringify(req.body);
         const saltRounds = 10;
-        const salt = bcrypt.genSalt(saltRounds);
-        req.body.password =  bcrypt.hash(req.body.password, salt);
+        const hashedPassword = bcrypt.hashSync(req.body.password, saltRounds);
+        
         const userData = {
             first_name: req.body.first_name,
             last_name: req.body.last_name,
             preposition: req.body.preposition,
             email: req.body.email,
-            password: req.body.password
+            password: hashedPassword
         }
 
         pool.getConnection(function(err, connection){
@@ -179,16 +196,27 @@ app.post('/submit', [
   });
 
 app.get("/api/data", (req,res) => {
-    res.json(res.sendFile(path.resolve(__dirname, "server", "api.json")))
+    return res.json(res.sendFile(path.resolve(__dirname, "server", "api.json")))
 })
 
-app.use("*", (req,res, next) => {
-   
+app.get("/logout",  ((req,res) => {
+  req.session.destroy((err) => {
+    if(err){
+      console.log(err)
+    }
+  })
+
+  res.clearCookie()
+
+  res.redirect("/")
+
+}))
+
+app.use("*", (req,res) => {
     return res.status(404).send("<h1>Resource not found</h1>")
 })
 
 app.listen(5000, () => {
     console.log("app listening on port: 5000")
 })
-
 
