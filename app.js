@@ -9,6 +9,7 @@ const bodyparser = require("body-parser")
 const {body, validationResult} = require("express-validator")
 const app = new express();
 const {pool, connection, userData} = require("./server/mysql")
+const process = require("process")
 
 const homePage = path.resolve(__dirname, "views", "index.html")
 const loginPage = path.resolve(__dirname, "views", "auth", "login.html")
@@ -28,7 +29,55 @@ app.use(bodyparser.urlencoded({
     extended: false
 }))
 
+app.use((req,res,next) => {
+  console.log("user ip is " + req.hostname)
+  next()
+})
+
+app.get("/api/users", ((req,res) => {
+  connection.query("SELECT * from users", (err, results) => {
+    if(err){
+     console.log(err)
+    }
+
+    res.json(results)
+    
+ });
+  
+}))
+
+app.get("/api/users/:uservalue", ((req,res) => {
+  let searchTerm = req.params.uservalue
+
+    // To prevent SQL injection, use placeholder '?' for parameters in your query
+    let sqlquery = "SELECT * FROM users WHERE first_name LIKE" + " '%" + searchTerm + "%' " + " OR preposition LIKE" + " '%" + searchTerm + "%'" + " OR last_name LIKE" + " '%" + searchTerm + "%'" + " OR email LIKE" + " '%" + searchTerm + "%'"  + " OR phone_number LIKE" + " '%" + searchTerm + "%'" ;
+
+    // '%' symbols are wildcards in SQL LIKE queries, surrounding the search term
+
+    pool.query(sqlquery, (err, results) => {
+        if (err) {
+            // Handle the error appropriately
+            console.log(err)
+        } else {
+            // Send the results back to the client
+            res.json(results);
+        }
+    });
+}))
+
+app.get("/test/:specificvalue", ((req,res) => {
+  let specificvalue = req.params.specificvalue
+  let variable = specificvalue.split("=")
+  console.log(variable[0])
+
+  //let sqlquery = "SELECT * FROM users WHERE " + LIKE" + " '%" + specificvalue + "%' "
+  
+ // connection.query()
+
+}))
+
 app.use(bodyparser.json());
+
 
 app.get("/", (req,res) => {
    res.sendFile(homePage)
@@ -58,10 +107,6 @@ app.get("/categories", (req,res) => {
     
 })
    
-app.get("/register", (req,res) => {
-    res.sendFile(registerPage);
-})
-
 app.get("/login", (req,res) => {
     res.sendFile(loginPage)
 })
@@ -120,7 +165,9 @@ app.route('/login')
     
   });
 
-
+  app.get("/register", (req,res) => {
+    res.sendFile(registerPage);
+})
 
 
 app.post('/submit', [
@@ -214,8 +261,6 @@ app.post('/submit', [
     }
   });
 
-app.get("/api/users", async (req,res) => {
-})
 
 app.get("/userdata", ((req,res) => {
   
@@ -236,6 +281,12 @@ app.get("/logout",  ((req,res) => {
 
 app.use("*", (req,res) => {
     return res.status(404).send("<h1>Resource not found</h1>")
+})
+
+app.use((err,req,res,next) => {
+  if(err){
+    res.status(500).send("err: " + err)
+  }
 })
 
 app.listen(5000, () => {

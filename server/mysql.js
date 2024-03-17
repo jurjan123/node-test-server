@@ -24,7 +24,7 @@ const userData = connection.query("SELECT * from users", (err, results) => {
         console.log(err.code)
        }
 
-       const data = JSON.stringify(results[0])
+       //const data = JSON.stringify(results[0])
     });
 
 
